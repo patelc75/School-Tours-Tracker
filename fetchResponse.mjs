@@ -1,4 +1,5 @@
 import https from 'https';
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 export const handler = async (event) => {
   return new Promise((resolve, reject) => {
@@ -78,11 +79,12 @@ export const handler = async (event) => {
           const result = response.data;
             response.data.high_schoolsCollection.edges.forEach(highSchoolEdge => {
                 const highSchool = highSchoolEdge.node;
-                console.log('\nhighSchool.name: ' + highSchool.name);
+                console.log('highSchool.name: ' + highSchool.name);
                 highSchool.followsCollection.edges.forEach(followEdge => {
                     const follow = followEdge.node;
-                    console.log('\nfollow.email: ' + follow.email);
-                    //TODO: SEND EMAIL HERE (SEE /workspaces/codespaces-blank/sendEmailsToFollowers.mjs)
+                    console.log('follow.email: ' + follow.email);
+                    const data = sendEmail(follow);
+                    console.log("Email sent successfully:", data);
                 });
             });
 
@@ -137,4 +139,33 @@ export const handler = async (event) => {
     req.end();
   });
 };
+
+async function sendEmail(email) {
+  const emailParams = {
+    Destination: {
+      ToAddresses: [email],
+    },
+    Message: {
+      Body: {
+        Text: {
+          Charset: "UTF-8",
+          Data: "This is the email body in text format.",
+        },
+        Html: {
+          Charset: "UTF-8",
+          Data: "<html><body><h1>This is the email body in HTML format.</h1></body></html>",
+        },
+      },
+      Subject: {
+        Charset: "UTF-8",
+        Data: "Email Subject",
+      },
+    },
+    Source: "nychighschooltourtracker@gmail.com",
+  };
+  const sesClient = new SESClient({ region: "us-west-2" });
+
+  const data = sesClient.send(new SendEmailCommand(emailParams));
+  return data;
+}
 
